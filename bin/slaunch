@@ -1,4 +1,6 @@
 #!/bin/bash
+#
+# Submit a job to process multiple subjects.
 
 if [ $# -lt 2 ]; then
     cat <<EOF
@@ -74,26 +76,30 @@ jobname=Job
 verbose=1
 while getopts ":f:n:tJ:gq" opt; do
     case $opt in
-	t)
-	    test=true
-	    ;;
-	f)
-	    runifexist=true
-	    file="$OPTARG"
-	    ;;
-	n)
-	    runifmissing=true
-	    file="$OPTARG"
-	    ;;
-	J)
-	    jobname="$OPTARG"
-	    ;;
-	g)
-	    ids=false
-	    ;;
-	q)
-	    verbose=0
-	    ;;
+        t)
+            test=true
+            ;;
+        f)
+            runifexist=true
+            file="$OPTARG"
+            ;;
+        n)
+            runifmissing=true
+            file="$OPTARG"
+            ;;
+        J)
+            jobname="$OPTARG"
+            ;;
+        g)
+            ids=false
+            ;;
+        q)
+            verbose=0
+            ;;
+        *)
+            echo "Invalid option: $opt"
+            exit 1
+            ;;
     esac
 done
 shift $((OPTIND-1))
@@ -102,11 +108,11 @@ command="$1"
 nos="$2"
 shift 2
 
-nos=$(echo $nos | sed "s/:/ /g")
+nos=${nos//:/ }
 
-if [ -z "$BATCHDIR" ]; then
+if [[ ! $BATCHDIR ]]; then
     export BATCHDIR=$PWD
-elif [ ! -d "$BATCHDIR" ]; then
+elif [[ ! -d $BATCHDIR ]]; then
     echo "Error: BATCHDIR does not exist: $BATCHDIR"
     exit 1
 fi
@@ -117,29 +123,29 @@ jobfile=$(get_auto_jobfile.sh "$jobname")
 for no in $nos; do
     # get the subject identifier
     if [ $ids = true ]; then
-	subject=$no
+        subject="$no"
     else
-	subject=$(subjids $no)
+        subject=$(subjids "$no")
     fi
 
     if [ $runifexist = true ]; then
-	# check for a dependency file
-	subj_file=$(echo "$file" | sed s/{}/$subject/g)
-	if [ ! -a "$subj_file" ]; then
-	    if [ $verbose -gt 0 ]; then
-	       echo "Missing file: $subj_file"
-	    fi
-	    continue
-	fi
+        # check for a dependency file
+        subj_file=${file//\{\}/$subject}
+        if [ ! -a "$subj_file" ]; then
+            if [ $verbose -gt 0 ]; then
+               echo "Missing file: $subj_file"
+            fi
+            continue
+        fi
     elif [ $runifmissing = true ]; then
-	# check for a missing output file
-	subj_file=$(echo "$file" | sed s/{}/$subject/g)
-	if [ -a "$subj_file" ]; then
-	    if [ $verbose -gt 0 ]; then
-		echo "File exists: $subj_file"
-	    fi
-	    continue
-	fi
+        # check for a missing output file
+        subj_file=${file//\{\}/$subject}
+        if [ -a "$subj_file" ]; then
+            if [ $verbose -gt 0 ]; then
+                echo "File exists: $subj_file"
+            fi
+            continue
+        fi
     fi
     
     # fill in subject ID and split commands
@@ -147,7 +153,7 @@ for no in $nos; do
     echo "$subj_command"
     
     if [ $test = false ]; then
-	echo -e "$subj_command" >> $jobfile
+        echo -e "$subj_command" >> $jobfile
     fi
 done
 

@@ -18,8 +18,8 @@ fi
 
 if [ -u $SUBJIDFORMAT ]; then
     if [ -u $STUDY ]; then
-	echo "STUDY and SUBJIDFORMAT are unset; quitting."
-	exit 1
+        echo "STUDY and SUBJIDFORMAT are unset; quitting."
+        exit 1
     fi
 
     # default format: $STUDY_XX
@@ -29,9 +29,13 @@ fi
 sep=":"
 while getopts ":s:" opt; do
     case $opt in
-	s)
-	    sep="$OPTARG"
-	    ;;
+        s)
+            sep="$OPTARG"
+            ;;
+        *)
+            echo "Invalid option: $opt"
+            exit 1
+            ;;
     esac
 done
 shift $((OPTIND-1))
@@ -41,9 +45,9 @@ subjids=""
 for no in $nos; do
     subject=$(printf "$SUBJIDFORMAT" $no)
     if [ -z "$subjids" ]; then
-	subjids="$subject"
+        subjids="$subject"
     else
-	subjids="${subjids}${sep}${subject}"
+        subjids="${subjids}${sep}${subject}"
     fi
 done
 echo "$subjids"

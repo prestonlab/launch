@@ -35,26 +35,30 @@ runifexist=false
 runifmissing=false
 while getopts ":qinpf:m:" opt; do
     case $opt in
-	q)
-	    verbose=0
-	    ;;
-	i)
-	    ids=1
-	    ;;
-	n)
-	    noexec=1
-	    ;;
-	p)
-	    runpar=1
-	    ;;
-	f)
-	    runifexist=true
-	    file="$OPTARG"
-	    ;;
-	m)
-	    runifmissing=true
-	    file="$OPTARG"
-	    ;;
+        q)
+            verbose=0
+            ;;
+        i)
+            ids=1
+            ;;
+        n)
+            noexec=1
+            ;;
+        p)
+            runpar=1
+            ;;
+        f)
+            runifexist=true
+            file="$OPTARG"
+            ;;
+        m)
+            runifmissing=true
+            file="$OPTARG"
+            ;;
+        *)
+            echo "Invalid option: $opt"
+            exit 1
+            ;;
     esac
 done
 shift $((OPTIND-1))    
@@ -72,57 +76,57 @@ fi
 
 if [ -z "$nos" ]; then
     for run in $runs; do
-	run_command=`echo $command | sed s/{r}/$run/g | sed s/{}/$run/g`
-	if [ $runifexist = true -o $runifmissing = true ]; then
-	    run_file=$(echo "$file" | sed s/{r}/$run/g | sed s/{}/$run/g)
-	    if [ $runifexist = true -a ! -a "$run_file" ]; then
-		continue
-	    elif [ $runifmissing = true -a -a "$run_file" ]; then
-		continue
-	    fi
-	fi
-	
-	if [ $verbose -eq 1 ]; then
-	    echo "$run_command"
-	fi
-	if [ $noexec -ne 1 ]; then
-	    if [ $runpar -eq 1 ]; then
-		$run_command &
-	    else
-		$run_command
-	    fi
-	fi
+        run_command=`echo $command | sed s/{r}/$run/g | sed s/{}/$run/g`
+        if [ $runifexist = true -o $runifmissing = true ]; then
+            run_file=$(echo "$file" | sed s/{r}/$run/g | sed s/{}/$run/g)
+            if [ $runifexist = true -a ! -a "$run_file" ]; then
+                continue
+            elif [ $runifmissing = true -a -a "$run_file" ]; then
+                continue
+            fi
+        fi
+        
+        if [ $verbose -eq 1 ]; then
+            echo "$run_command"
+        fi
+        if [ $noexec -ne 1 ]; then
+            if [ $runpar -eq 1 ]; then
+                $run_command &
+            else
+                $run_command
+            fi
+        fi
     done
 else
     nos=`echo $nos | sed "s/:/ /g"`
     for no in $nos; do
-	if [ $ids -eq 1 ]; then
-	    subject=$no
-	else
-	    subject=$(subjids $no)
-	fi
-	subj_command=`echo $command | sed s/{s}/$subject/g`
-	for run in $runs; do
-	    run_command=`echo $subj_command | sed s/{r}/$run/g`
-	    if [ $runifexist = true -o $runifmissing = true ]; then
-		run_file=$(echo "$file" | sed s/{s}/$subject/g | sed s/{r}/$run/g)
-		if [ $runifexist = true -a ! -a "$run_file" ]; then
-		    continue
-		elif [ $runifmissing = true -a -a "$run_file" ]; then
-		    continue
-		fi
-	    fi
-	    
-	    if [ $verbose -eq 1 ]; then
-		echo "$run_command"
-	    fi
-	    if [ $noexec -ne 1 ]; then
-		if [ $runpar -eq 1 ]; then
-		    $run_command &
-		else
-		    $run_command
-		fi
-	    fi
-	done
+        if [ $ids -eq 1 ]; then
+            subject=$no
+        else
+            subject=$(subjids $no)
+        fi
+        subj_command=`echo $command | sed s/{s}/$subject/g`
+        for run in $runs; do
+            run_command=`echo $subj_command | sed s/{r}/$run/g`
+            if [ $runifexist = true -o $runifmissing = true ]; then
+                run_file=$(echo "$file" | sed s/{s}/$subject/g | sed s/{r}/$run/g)
+                if [ $runifexist = true -a ! -a "$run_file" ]; then
+                    continue
+                elif [ $runifmissing = true -a -a "$run_file" ]; then
+                    continue
+                fi
+            fi
+            
+            if [ $verbose -eq 1 ]; then
+                echo "$run_command"
+            fi
+            if [ $noexec -ne 1 ]; then
+                if [ $runpar -eq 1 ]; then
+                    $run_command &
+                else
+                    $run_command
+                fi
+            fi
+        done
     done
 fi

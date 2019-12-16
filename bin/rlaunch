@@ -1,4 +1,6 @@
 #!/bin/bash
+#
+# Submit a job to process multiple subjects and runs.
 
 if [ $# -lt 1 ]; then
     cat <<EOF
@@ -67,23 +69,27 @@ ids=true
 jobname=Job
 while getopts ":f:n:tJ:g" opt; do
     case $opt in
-	t)
-	    test=true
-	    ;;
-	f)
-	    runifexist=true
-	    file="$OPTARG"
-	    ;;
-	n)
-	    runifmissing=true
-	    file="$OPTARG"
-	    ;;
-	J)
-	    jobname="$OPTARG"
-	    ;;
-	g)
-	    ids=false
-	    ;;
+        t)
+            test=true
+            ;;
+        f)
+            runifexist=true
+            file="$OPTARG"
+            ;;
+        n)
+            runifmissing=true
+            file="$OPTARG"
+            ;;
+        J)
+            jobname="$OPTARG"
+            ;;
+        g)
+            ids=false
+            ;;
+        *)
+            echo "Invalid option: $opt"
+            exit 1
+            ;;
     esac
 done
 shift $((OPTIND-1))
@@ -94,21 +100,21 @@ runids="$3"
 shift 3
 
 args="-ni"
-if [ $runifexist = true ]; then
+if [[ $runifexist = true ]]; then
     args="$args -f $file"
-elif [ $runifmissing = true ]; then
+elif [[ $runifmissing = true ]]; then
     args="$args -m $file"
 fi
 
-if [ $ids = true ]; then
+if [[ $ids = true ]]; then
     subjects="$subjnos"
 else
     subjects=$(subjids $subjnos)
 fi
 
-if [ -z "$BATCHDIR" ]; then
+if [[ ! $BATCHDIR ]]; then
     export BATCHDIR=$PWD
-elif [ ! -d "$BATCHDIR" ]; then
+elif [[ ! -d $BATCHDIR ]]; then
     echo "Error: BATCHDIR does not exist: $BATCHDIR"
     exit 1
 fi
@@ -116,23 +122,23 @@ fi
 # determine file to write commands to
 jobfile=$(get_auto_jobfile.sh "$jobname")
 
-if [ $test = true ]; then
+if [[ $test = true ]]; then
     run_runs.sh $args "$command" "$runids" "$subjects"
 else
-    run_runs.sh $args "$command" "$runids" "$subjects" > $jobfile
+    run_runs.sh $args "$command" "$runids" "$subjects" > "$jobfile"
 fi
 
 if [ $test = true ]; then
     exit 1
 fi
 
-cat $jobfile
-chmod +x $jobfile
+cat "$jobfile"
+chmod +x "$jobfile"
 
 # set the output file and sbatch file to standard names
-file=$(basename $jobfile)
-name=$(echo $file | cut -d . -f 1)
-outfile=$BATCHDIR/${name}.out
-batchfile=$BATCHDIR/${name}.slurm
+file=$(basename "$jobfile")
+name=$(echo "$file" | cut -d . -f 1)
+outfile="$BATCHDIR/${name}.out"
+batchfile="$BATCHDIR/${name}.slurm"
 
-launch -s $jobfile -J $name -o $outfile -f $batchfile -k "$@"
+launch -s "$jobfile" -J "$name" -o "$outfile" -f "$batchfile" -k "$@"

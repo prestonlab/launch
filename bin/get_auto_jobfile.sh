@@ -28,8 +28,8 @@ else
     start=$((${#base}+1))
     max=0
     for filename in "${base}"*.sh; do
-	n=$(echo $filename | cut -c ${start}- | cut -d . -f 1)
-	((n > max)) && max=$n
+        n=$(echo $filename | cut -c ${start}- | cut -d . -f 1)
+        ((n > max)) && max=$n
     done
     file="${base}"$(( max + 1 )).sh
 fi

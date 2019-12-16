@@ -65,10 +65,10 @@ jobname=Job
 while getopts ":s:xJ:" opt; do
     case $opt in
         s)
-	        # read script file and stop reading options (prevents
-	        # confusion between submit_job options and launch options)
+            # read script file and stop reading options (prevents
+            # confusion between submit_job options and launch options)
             script="$OPTARG"
-	        break
+            break
             ;;
         x)
             remora=true
@@ -79,7 +79,7 @@ while getopts ":s:xJ:" opt; do
         *)
             echo "Invalid option: ${opt}"
             exit 1
-	        ;;
+            ;;
     esac
 done
 
