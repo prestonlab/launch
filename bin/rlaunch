@@ -1,0 +1,138 @@
+#!/bin/bash
+
+if [ $# -lt 1 ]; then
+    cat <<EOF
+rlaunch - Submit a job to process multiple subjects and runs.
+
+Usage: rlaunch [command options] commands subjects runs [launch options]
+
+Construct a command to run multiple runs for multiple subjects and
+submit a job to run the commands in parallel. In the commands,
+every {s} will be replaced with the subject ID, and every {r} will
+be replaced by the run name. A command will be generated for
+each subject/run combination.
+
+Example:
+SUBJIDS=bender_02:bender_04:bender_05
+RUNIDS=study_1:study_2:study_3:study_4:study_5:study_6
+rlaunch -t "prep_bold_run.sh \$STUDYDIR/{s}/BOLD/{r}" \$SUBJIDS \$RUNIDS
+Uses the -t (test) option to display all the commands that would
+be run.
+
+export BATCHDIR=\$WORK/batch/launchscripts
+rlaunch "prep_bold_run.sh \$STUDYDIR/{s}/BOLD/{r}" \$SUBJIDS \$RUNIDS -N 3 -n 18 -a 4 -r 01:00:00
+
+Executes prep_bold_run.sh for all study runs for the three
+subjects, in parallel, on three nodes, with 4 threads per process.
+If the BATCHDIR variable is set, output logs will be saved there;
+otherwise, results will be saved in the current directory.
+
+Command options:
+-t
+    Test; just display all commands that would be run.
+
+-J
+    Job name. Information about the job will be saved in
+    \$BATCHDIR/\${jobname}XX.{sh,slurm,out}, where XX is a
+    serial number. Default is 'Job'.
+
+-f file
+    Test for a file dependency. A given command is only run
+    if this file exists. May contain {s} and/or {r}, which will
+    be expanded with the current subject ID and run ID.
+
+-n file
+    Test for an output that does not exist. A given command
+    only runs if the file does not exist. May contain {s}
+    and/or {r}, which will be expanded with the current subject
+    ID and run ID.
+
+-g
+    Generate subject IDs based on subject numbers. Must set the
+    SUBJIDFORMAT environment variable. printf will be used to
+    generate subject IDs based on the input numbers, based on
+    SUBJIDFORMAT.
+
+Launch options:
+Run 'launch -h' to see all job submission options.
+
+EOF
+    exit 1
+fi
+
+test=false
+runifexist=false
+runifmissing=false
+ids=true
+jobname=Job
+while getopts ":f:n:tJ:g" opt; do
+    case $opt in
+	t)
+	    test=true
+	    ;;
+	f)
+	    runifexist=true
+	    file="$OPTARG"
+	    ;;
+	n)
+	    runifmissing=true
+	    file="$OPTARG"
+	    ;;
+	J)
+	    jobname="$OPTARG"
+	    ;;
+	g)
+	    ids=false
+	    ;;
+    esac
+done
+shift $((OPTIND-1))
+
+command="$1"
+subjnos="$2"
+runids="$3"
+shift 3
+
+args="-ni"
+if [ $runifexist = true ]; then
+    args="$args -f $file"
+elif [ $runifmissing = true ]; then
+    args="$args -m $file"
+fi
+
+if [ $ids = true ]; then
+    subjects="$subjnos"
+else
+    subjects=$(subjids $subjnos)
+fi
+
+if [ -z "$BATCHDIR" ]; then
+    export BATCHDIR=$PWD
+elif [ ! -d "$BATCHDIR" ]; then
+    echo "Error: BATCHDIR does not exist: $BATCHDIR"
+    exit 1
+fi
+
+# determine file to write commands to
+jobfile=$(get_auto_jobfile.sh "$jobname")
+
+if [ $test = true ]; then
+    run_runs.sh $args "$command" "$runids" "$subjects"
+else
+    run_runs.sh $args "$command" "$runids" "$subjects" > $jobfile
+fi
+
+if [ $test = true ]; then
+    exit 1
+fi
+
+cat $jobfile
+chmod +x $jobfile
+
+# set the output file and sbatch file to standard names
+file=$(basename $jobfile)
+name=$(echo $file | cut -d . -f 1)
+outfile=$BATCHDIR/${name}.out
+batchfile=$BATCHDIR/${name}.slurm
+
+launch -s $jobfile -J $name -o $outfile -f $batchfile -k "$@"

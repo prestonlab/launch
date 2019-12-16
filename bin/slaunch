@@ -1,0 +1,166 @@
+#!/bin/bash
+
+if [ $# -lt 2 ]; then
+    cat <<EOF
+slaunch - Submit a job to process multiple subjects.
+
+Usage: slaunch [command options] commands subjects [launch options]
+
+Construct a command for multiple subjects and submit a job to
+run the commands in parallel.
+
+In the commands string, any '{}' will be replaced with
+subject identifier. Use the -t option to see the commands without
+actually submitting a job.
+
+Example:
+slaunch -t "convert_dicom.py {}" bender_01:bender_01a
+
+Uses the -t (test) option to display all commands that would
+be run. Note the command must be placed in quotes.
+
+slaunch "convert_dicom.py {}" bender_01:bender_01a -N 1 -n 2 -r 00:30:00
+
+runs 'convert_dicom.py bender_01' and 'convert_dicom.py bender_01a'
+in parallel and saves output to the current directory.
+
+Example:
+export SUBJIDFORMAT=bender_%02d # zero-padded two-digit number
+export BATCHDIR=\$WORK/batch
+slaunch -g "convert_dicom.py {}" 1:2:3:4 -N 1 -n 4 -r 00:30:00
+
+runs 'convert_dicom.py bender_01', 'convert_dicom.py bender_02',"
+'convert_dicom.py bender_03', and 'convert_dicom.py bender_04'
+in parallel on one node, and writes logs to \$WORK/batch.
+Subject IDs are created from the subject numbers based on the
+SUBJIDFORMAT variable, using printf.
+
+Command options:
+-t
+    Test; just display all commands that would be run.
+
+-J
+    Job name. Information about the job will be saved in
+    \$BATCHDIR/\${jobname}XX.{sh,slurm,out}, where XX is a
+    serial number. Default is 'Job'.
+
+-f file
+    Test for a file dependency. Any {} is replaced with the
+    subject, and that subject is only run if the file exists.
+
+-n file
+    Test for an output that does not exist. Any {} is replaced
+    with the subject, and that subject only runs if the file
+    does not exist.
+
+-g
+    Generate subject IDs based on subject numbers. Must set the
+    SUBJIDFORMAT environment variable. printf will be used to
+    generate subject IDs based on the input numbers, based on
+    SUBJIDFORMAT.
+
+Launch options:
+Run 'launch -h' to see all job submission options.
+
+EOF
+    exit 1
+fi
+
+test=false
+runifexist=false
+runifmissing=false
+ids=true
+jobname=Job
+verbose=1
+while getopts ":f:n:tJ:gq" opt; do
+    case $opt in
+	t)
+	    test=true
+	    ;;
+	f)
+	    runifexist=true
+	    file="$OPTARG"
+	    ;;
+	n)
+	    runifmissing=true
+	    file="$OPTARG"
+	    ;;
+	J)
+	    jobname="$OPTARG"
+	    ;;
+	g)
+	    ids=false
+	    ;;
+	q)
+	    verbose=0
+	    ;;
+    esac
+done
+shift $((OPTIND-1))
+
+command="$1"
+nos="$2"
+shift 2
+
+nos=$(echo $nos | sed "s/:/ /g")
+
+if [ -z "$BATCHDIR" ]; then
+    export BATCHDIR=$PWD
+elif [ ! -d "$BATCHDIR" ]; then
+    echo "Error: BATCHDIR does not exist: $BATCHDIR"
+    exit 1
+fi
+
+# determine file to write commands to
+jobfile=$(get_auto_jobfile.sh "$jobname")
+
+for no in $nos; do
+    # get the subject identifier
+    if [ $ids = true ]; then
+	subject=$no
+    else
+	subject=$(subjids $no)
+    fi
+
+    if [ $runifexist = true ]; then
+	# check for a dependency file
+	subj_file=$(echo "$file" | sed s/{}/$subject/g)
+	if [ ! -a "$subj_file" ]; then
+	    if [ $verbose -gt 0 ]; then
+	       echo "Missing file: $subj_file"
+	    fi
+	    continue
+	fi
+    elif [ $runifmissing = true ]; then
+	# check for a missing output file
+	subj_file=$(echo "$file" | sed s/{}/$subject/g)
+	if [ -a "$subj_file" ]; then
+	    if [ $verbose -gt 0 ]; then
+		echo "File exists: $subj_file"
+	    fi
+	    continue
+	fi
+    fi
+    
+    # fill in subject ID and split commands
+    subj_command=$(echo $command | sed s/{}/$subject/g | sed s/{s}/$subject/g)
+    echo "$subj_command"
+    
+    if [ $test = false ]; then
+	echo -e "$subj_command" >> $jobfile
+    fi
+done
+
+if [ $test = true ]; then
+    exit 1
+fi
+
+chmod +x $jobfile
+
+# set the output file and sbatch file to standard names
+file=$(basename $jobfile)
+name=$(echo $file | cut -d . -f 1)
+outfile=$BATCHDIR/${name}.out
+batchfile=$BATCHDIR/${name}.slurm
+
+launch -s $jobfile -J $name -o $outfile -f $batchfile -k "$@"
