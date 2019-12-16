@@ -12,7 +12,6 @@ import subprocess
 import math
 from datetime import datetime
 
-
 CORES = {'normal': 48, 'largemem': 32, 'hugemem': 20,
          'development': 48, 'gpu': 10, 'largemem512GB': 64}
 MAXNODES = {'normal': 171, 'largemem': 342, 'hugemem': 2,
@@ -21,13 +20,12 @@ MAXCORES = {'normal': 4104, 'largemem': 8208, 'hugemem': 40,
             'development': 264, 'gpu': 40, 'largemem512GB': 4 * 64}
 
 
-def launch_slurm(serialcmd='', script_name=None, runtime='01:00:00',
+def launch_slurm(cmd='', script_name=None, runtime='01:00:00',
                  jobname='launch', outfile=None, projname=None, queue='normal',
                  email=None, qsubfile=None, keepqsubfile=False,
                  test=False, compiler='intel', hold=None, cwd=None,
                  nnodes=None, ntasks=None, tpn=None, antsproc=None,
                  schedule='dynamic', remora=None):
-    cmd = serialcmd
 
     if len(cmd) > 0:
         parametric = False
@@ -222,17 +220,18 @@ if __name__ == "__main__":
                         dest='nodes', default=None)
     parser.add_argument('-n', '--ntasks', help='number of tasks to run',
                         dest='ntasks', default=None)
-    parser.add_argument('-e', '--tasks-per-node', help='number of tasks per node',
+    parser.add_argument('-e', '--tasks-per-node',
+                        help='number of tasks per node',
                         dest='tpn', default=None)
     parser.add_argument('-s', '--script', help='name of parallel script to run',
                         dest='script_name')
     parser.add_argument('-r', '--runtime', help='maximum runtime for job',
-                        default='01:00:00',dest='runtime')
+                        default='01:00:00', dest='runtime')
     parser.add_argument('-J', '--jobname', help='job name',
                         default='launch', dest='jobname')
     parser.add_argument('-o', '--outfile', help='output file',
                         default=None, dest='outfile')
-    parser.add_argument('-p','-q','--queue', help='name of queue',
+    parser.add_argument('-p', '-q', '--queue', help='name of queue',
                         default='normal', dest='queue')
     parser.add_argument('-A', '--projname', help='name of project',
                         dest='projname', default='ANTS')
@@ -263,11 +262,11 @@ if __name__ == "__main__":
     (args, command) = parser.parse_known_args(sys.argv[1:])
 
     if len(command) > 0:
-        cmd=' '.join(command)
+        cmd = ' '.join(command)
     else:
-        cmd=''
+        cmd = ''
 
-    launch_slurm(serialcmd=cmd, script_name=args.script_name,
+    launch_slurm(cmd=cmd, script_name=args.script_name,
                  runtime=args.runtime, jobname=args.jobname,
                  outfile=args.outfile, projname=args.projname,
                  queue=args.queue, email=args.email,
