@@ -1,4 +1,6 @@
 #!/bin/bash
+#
+# Submit a job and manage job commands, settings, and output.
 
 if [ $# -lt 1 ]; then
     cat <<EOF
@@ -63,25 +65,29 @@ jobname=Job
 while getopts ":s:xJ:" opt; do
     case $opt in
         s)
-	    # read script file and stop reading options (prevents
-	    # confusion between submit_job options and launch options)
+	        # read script file and stop reading options (prevents
+	        # confusion between submit_job options and launch options)
             script="$OPTARG"
-	    break
+	        break
             ;;
-	x)
-	    remora=true
-	    ;;
-	J)
-	    jobname="$OPTARG"
-	    ;;
+        x)
+            remora=true
+            ;;
+        J)
+            jobname="$OPTARG"
+            ;;
+        *)
+            echo "Invalid option: ${opt}"
+            exit 1
+	        ;;
     esac
 done
 
 shift $((OPTIND-1))
 
-if [ -z "$BATCHDIR" ]; then
+if [[ ! $BATCHDIR ]]; then
     export BATCHDIR=$PWD
-elif [ ! -d "$BATCHDIR" ]; then
+elif [[ ! -d $BATCHDIR ]]; then
     echo "Error: BATCHDIR does not exist: $BATCHDIR"
     exit 1
 fi
@@ -89,26 +95,26 @@ fi
 # get the next job file for this basename, in the BATCHDIR
 jobfile=$(get_auto_jobfile.sh "$jobname")
 
-if [ -n "$script" ]; then
+if [[ $script ]]; then
     # script with one or more commands
     echo "Script: $script"
-    cp $script $jobfile
+    cp "$script" "$jobfile"
 else
     # command string input; make a script
     commands="$1"
     shift
-    echo "$commands" > $jobfile
+    echo "$commands" > "$jobfile"
 fi
-chmod +x $jobfile
+chmod +x "$jobfile"
 
-file=$(basename $jobfile)
-name=$(echo $file | cut -d . -f 1)
-outfile=$BATCHDIR/${name}.out
-batchfile=$BATCHDIR/${name}.slurm
+file=$(basename "$jobfile")
+name=$(echo "$file" | cut -d . -f 1)
+outfile="$BATCHDIR/${name}.out"
+batchfile="$BATCHDIR/${name}.slurm"
 
 args=""
 if [ $remora = true ]; then
     args="${args} -x $BATCHDIR/${name}.remora"
 fi
 
-launch -s $jobfile -J $name -o $outfile -f $batchfile -k$args "$@"
+launch -s "$jobfile" -J "$name" -o "$outfile" -f "$batchfile" -k"$args" "$@"
