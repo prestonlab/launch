@@ -13,14 +13,14 @@ else
     base="$1"
 fi
 
-if [ -z $BATCHDIR ]; then
+if [[ ! $BATCHDIR ]]; then
     echo "Error: Must define BATCHDIR to indicate directory to save jobs in." >&2
     exit 1
 fi
 
-mkdir -p $BATCHDIR
+mkdir -p "$BATCHDIR"
 
-cd $BATCHDIR
+cd "$BATCHDIR" || exit 1
 
 if [ ! -e "${base}"1.sh ]; then
     file="${base}"1.sh
@@ -28,9 +28,9 @@ else
     start=$((${#base}+1))
     max=0
     for filename in "${base}"*.sh; do
-        n=$(echo $filename | cut -c ${start}- | cut -d . -f 1)
+        n=$(echo "$filename" | cut -c ${start}- | cut -d . -f 1)
         ((n > max)) && max=$n
     done
     file="${base}"$(( max + 1 )).sh
 fi
-echo ${BATCHDIR}/${file}
+echo "${BATCHDIR}/${file}"

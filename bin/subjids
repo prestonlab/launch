@@ -1,23 +1,29 @@
 #!/bin/bash
+#
+# Create a list of subject IDs from numbers.
 
 if [ $# -lt 1 ]; then
-    echo "subjids - Create a list of subject IDs from numbers."
-    echo
-    echo "Usage: subjids [-s separator] N1 [N2, ...]"
-    echo
-    echo "If SUBJIDFORMAT is defined, this will be used with printf"
-    echo "to create each subject ID. If it is not defined, but STUDY"
-    echo "is, then the format will be ${STUDY}_%02d".
-    echo
-    echo 'The default separator between IDs is ":".'
-    echo
-    echo "Example:"
-    echo 'export SUBJIDFORMAT=No_%03d'
-    echo 'subjids -s " " 3 4 5 # returns "No_003 No_004 No_005"'
+    cat <<EOF
+subjids - Create a list of subject IDs from numbers.
+
+Usage: subjids [-s separator] N1 [N2, ...]
+
+If SUBJIDFORMAT is defined, this will be used with printf
+to create each subject ID. If it is not defined, but STUDY
+is, then the format will be mistr_%02d.
+
+The default separator between IDs is ":".
+
+Example:
+export SUBJIDFORMAT=No_%03d
+subjids -s " " 3 4 5 # returns "No_003 No_004 No_005"
+
+EOF
+    exit 1
 fi
 
-if [ -u $SUBJIDFORMAT ]; then
-    if [ -u $STUDY ]; then
+if [[ ! $SUBJIDFORMAT ]]; then
+    if [[ ! $STUDY ]]; then
         echo "STUDY and SUBJIDFORMAT are unset; quitting."
         exit 1
     fi
@@ -40,9 +46,10 @@ while getopts ":s:" opt; do
 done
 shift $((OPTIND-1))
 
-nos=$(echo "$@" | sed "s/:/ /g")
+nos="${*}"
 subjids=""
-for no in $nos; do
+for no in ${nos//:/ }; do
+    # shellcheck disable=SC2059
     subject=$(printf "$SUBJIDFORMAT" $no)
     if [ -z "$subjids" ]; then
         subjids="$subject"

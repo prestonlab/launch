@@ -122,13 +122,13 @@ jobfile=$(get_auto_jobfile.sh "$jobname")
 
 for no in $nos; do
     # get the subject identifier
-    if [ $ids = true ]; then
+    if [[ $ids = true ]]; then
         subject="$no"
     else
         subject=$(subjids "$no")
     fi
 
-    if [ $runifexist = true ]; then
+    if [[ $runifexist = true ]]; then
         # check for a dependency file
         subj_file=${file//\{\}/$subject}
         if [ ! -a "$subj_file" ]; then
@@ -137,11 +137,11 @@ for no in $nos; do
             fi
             continue
         fi
-    elif [ $runifmissing = true ]; then
+    elif [[ $runifmissing = true ]]; then
         # check for a missing output file
         subj_file=${file//\{\}/$subject}
-        if [ -a "$subj_file" ]; then
-            if [ $verbose -gt 0 ]; then
+        if [[ -a $subj_file ]]; then
+            if [[ $verbose -gt 0 ]]; then
                 echo "File exists: $subj_file"
             fi
             continue
@@ -149,24 +149,24 @@ for no in $nos; do
     fi
     
     # fill in subject ID and split commands
-    subj_command=$(echo $command | sed s/{}/$subject/g | sed s/{s}/$subject/g)
+    subj_command=$(echo "$command" | sed "s/{}/$subject/g" | sed "s/{s}/$subject/g")
     echo "$subj_command"
     
-    if [ $test = false ]; then
-        echo -e "$subj_command" >> $jobfile
+    if [[ $test = false ]]; then
+        echo -e "$subj_command" >> "$jobfile"
     fi
 done
 
-if [ $test = true ]; then
+if [[ $test = true ]]; then
     exit 1
 fi
 
-chmod +x $jobfile
+chmod +x "$jobfile"
 
 # set the output file and sbatch file to standard names
-file=$(basename $jobfile)
-name=$(echo $file | cut -d . -f 1)
-outfile=$BATCHDIR/${name}.out
-batchfile=$BATCHDIR/${name}.slurm
+file=$(basename "$jobfile")
+name=$(echo "$file" | cut -d . -f 1)
+outfile="$BATCHDIR/${name}.out"
+batchfile="$BATCHDIR/${name}.slurm"
 
-launch -s $jobfile -J $name -o $outfile -f $batchfile -k "$@"
+launch -s "$jobfile" -J "$name" -o "$outfile" -f "$batchfile" -k "$@"

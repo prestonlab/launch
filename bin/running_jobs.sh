@@ -22,12 +22,12 @@ shift $((OPTIND-1))
 job_dir="${BATCHDIR}"
 
 # get a list of names for all running or pending jobs
-running=$(squeue -u $USER -h -o "%j" -S i -t RUNNING,PENDING)
+running=$(squeue -u "$USER" -h -o "%j" -S i -t RUNNING,PENDING)
 for f in $running; do
     # look up queue information about this job
-    status=$(squeue -u $USER -n $f -h -o %T)
-    elapsed=$(squeue -u $USER -n $f -h -o %M)
-    limit=$(squeue -u $USER -n $f -h -o %l)
+    status=$(squeue -u "$USER" -n "$f" -h -o %T)
+    elapsed=$(squeue -u "$USER" -n "$f" -h -o %M)
+    limit=$(squeue -u "$USER" -n "$f" -h -o %l)
 
     # check for a command file with the same name
     file="${job_dir}/${f}"
@@ -54,10 +54,10 @@ for f in $running; do
     # list all commands
     if [[ -e ${file}${ext} && $show_cmds = true ]]; then
         if [[ $lines ]]; then
-            head -n $lines ${file}${ext}
+            head -n "$lines" "${file}${ext}"
         else
-            while read line; do
-                echo $line
+            while read -r line; do
+                echo "$line"
             done < "${file}${ext}"
         fi
     fi

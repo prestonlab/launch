@@ -1,4 +1,6 @@
 #!/bin/bash
+#
+# Run a command on multiple subjects.
 
 if [ $# -lt 1 ]; then
     cat <<EOF
@@ -81,40 +83,39 @@ shift $((OPTIND-1))
 command="$1"
 shift 1
 
-if [ $# -lt 1 ]; then
-    if [ $ids == 1 ]; then
+if [[ $# -lt 1 ]]; then
+    if [[ $ids = 1 ]]; then
         nos="$SUBJIDS"
     else
         nos="$SUBJNOS"
     fi
 else
-    nos="$@"
+    nos="$*"
 fi
 
-if [ -z "$nos" ]; then
+if [[ ! $nos ]]; then
     echo "Error: must indicate subject numbers to include."
     exit 1
 fi
 
-nos=$(echo $nos | sed "s/:/ /g")
 subjects=""
-for no in $nos; do
+for no in ${nos//:/ }; do
     # get subject id
-    if [ $ids == 1 ]; then
+    if [[ $ids = 1 ]]; then
         subject=$no
     else
-        subject=$(subjids $no)
+        subject=$(subjids "$no")
     fi
 
     # create command
-    subj_command=$(echo $command | sed s/{}/$subject/g)
-    if [ $verbose -eq 1 -a $runpar -ne 1 ]; then
+    subj_command=${command/\{\}/$subject}
+    if [[ $verbose = 1 && $runpar != 1 ]]; then
         echo "$subj_command"
     fi
 
     # get list of subjects for use with parallel
-    if [ $runpar -eq 1 ]; then
-        if [ -z "$subjects" ]; then
+    if [[ $runpar = 1 ]]; then
+        if [[ ! $subjects ]]; then
             subjects="$subject"
         else
             subjects="$subjects $subject"
@@ -122,19 +123,19 @@ for no in $nos; do
     fi
 
     # if running in serial, execute command
-    if [ $noexec -ne 1 ]; then
+    if [[ $noexec != 1 ]]; then
         $subj_command
     fi
 done
 
-if [ $runpar -eq 1 ]; then
+if [[ $runpar = 1 ]]; then
     # run collected commands using gnu parallel
-    if [ $verbose -eq 1 ]; then
+    if [[ $verbose = 1 ]]; then
         echo "parallel -j $nproc $command ::: $subjects"
     fi
-    if [ $noexec -ne 1 ]; then
+    if [[ $noexec != 1 ]]; then
         if hash parallel 2>/dev/null; then
-            parallel -q -j $nproc "$command" ::: $subjects
+            parallel -q -j "$nproc" "$command" ::: $subjects
         else
             echo "Error: Cannot find GNU parallel."
             exit 1

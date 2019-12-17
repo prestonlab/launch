@@ -1,29 +1,34 @@
 #!/bin/bash
+#
+# Run a command on multiple subjects and runs.
 
 if [ $# -lt 1 ]; then
-    echo "run_runs.sh   Run a command on multiple subjects and runs."
-    echo
-    echo "Usage: run_runs.sh [OPTION] commands runs [subjects]"
-    echo
-    echo "Options:"
-    echo "-q"
-    echo "       do not print commands before executing"
-    echo
-    echo "-i"
-    echo "       subject inputs are IDs (e.g. bender_01) instead of"
-    echo "       numbers (e.g. 1). If subjects not specified, the"
-    echo "       SUBJIDS environment variable will be used instead"
-    echo "       of SUBJNOS."
-    echo
-    echo "'-n'"
-    echo "       do not execute commands"
-    echo
-    echo "-p"
-    echo "       run commands in parallel (run as background processes)"
-    echo
-    echo "Like run_subjs.sh, but any '{r}' will be replaced"
-    echo "with run identifier. If subjects are specified (optional),"
-    echo "{s} will be replaced with the subject ID."
+    cat <<EOF
+run_runs.sh   Run a command on multiple subjects and runs.
+
+Usage: run_runs.sh [OPTION] commands runs [subjects]
+
+Options:
+-q
+       do not print commands before executing
+
+-i
+       subject inputs are IDs (e.g. bender_01) instead of
+       numbers (e.g. 1). If subjects not specified, the
+       SUBJIDS environment variable will be used instead
+       of SUBJNOS.
+
+-n
+       do not execute commands
+
+-p
+       run commands in parallel (run as background processes)
+
+Like run_subjs.sh, but any {r} will be replaced
+with run identifier. If subjects are specified (optional),
+{s} will be replaced with the subject ID.
+
+EOF
     exit 1
 fi
 
@@ -66,31 +71,31 @@ shift $((OPTIND-1))
 command="$1"
 shift 1
 
-runs=`echo $1 | sed "s/:/ /g"`
+runs=${$1//:/ }
 
-if [ $# -lt 2 ]; then
+if [[ $# -lt 2 ]]; then
     nos=""
 else
-    nos="$2"
+    nos=${2//:/ }
 fi
 
-if [ -z "$nos" ]; then
+if [[ ! $nos ]]; then
     for run in $runs; do
-        run_command=`echo $command | sed s/{r}/$run/g | sed s/{}/$run/g`
-        if [ $runifexist = true -o $runifmissing = true ]; then
-            run_file=$(echo "$file" | sed s/{r}/$run/g | sed s/{}/$run/g)
-            if [ $runifexist = true -a ! -a "$run_file" ]; then
+        run_command=$(echo "$command" | sed "s/{r}/$run/g" | sed "s/{}/$run/g")
+        if [[ $runifexist = true || $runifmissing = true ]]; then
+            run_file=$(echo "$file" | sed "s/{r}/$run/g" | sed "s/{}/$run/g")
+            if [[ $runifexist = true && ! -a $run_file ]]; then
                 continue
-            elif [ $runifmissing = true -a -a "$run_file" ]; then
+            elif [[ $runifmissing = true && -a $run_file ]]; then
                 continue
             fi
         fi
         
-        if [ $verbose -eq 1 ]; then
+        if [[ $verbose -eq 1 ]]; then
             echo "$run_command"
         fi
-        if [ $noexec -ne 1 ]; then
-            if [ $runpar -eq 1 ]; then
+        if [[ $noexec -ne 1 ]]; then
+            if [[ $runpar -eq 1 ]]; then
                 $run_command &
             else
                 $run_command
@@ -98,30 +103,30 @@ if [ -z "$nos" ]; then
         fi
     done
 else
-    nos=`echo $nos | sed "s/:/ /g"`
     for no in $nos; do
         if [ $ids -eq 1 ]; then
             subject=$no
         else
-            subject=$(subjids $no)
+            subject=$(subjids "$no")
         fi
-        subj_command=`echo $command | sed s/{s}/$subject/g`
+        subj_command=${command//\{s\}/$subject}
+        subj_file=${file//\{s\}/$subject}
         for run in $runs; do
-            run_command=`echo $subj_command | sed s/{r}/$run/g`
-            if [ $runifexist = true -o $runifmissing = true ]; then
-                run_file=$(echo "$file" | sed s/{s}/$subject/g | sed s/{r}/$run/g)
-                if [ $runifexist = true -a ! -a "$run_file" ]; then
+            run_command=${subj_command//\{r\}/$run}
+            if [[ $runifexist = true || $runifmissing = true ]]; then
+                run_file=${subj_file//\{r\}/$run}
+                if [[ $runifexist = true && ! -a $run_file ]]; then
                     continue
-                elif [ $runifmissing = true -a -a "$run_file" ]; then
+                elif [[ $runifmissing = true && -a $run_file ]]; then
                     continue
                 fi
             fi
             
-            if [ $verbose -eq 1 ]; then
+            if [[ $verbose -eq 1 ]]; then
                 echo "$run_command"
             fi
-            if [ $noexec -ne 1 ]; then
-                if [ $runpar -eq 1 ]; then
+            if [[ $noexec -ne 1 ]]; then
+                if [[ $runpar -eq 1 ]]; then
                     $run_command &
                 else
                     $run_command
