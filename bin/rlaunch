@@ -123,9 +123,9 @@ fi
 jobfile=$(jfile "$jobname")
 
 if [[ $test = true ]]; then
-    run_runs.sh $args "$command" "$runids" "$subjects"
+    runexec $args "$command" "$runids" "$subjects"
 else
-    run_runs.sh $args "$command" "$runids" "$subjects" > "$jobfile"
+    runexec $args "$command" "$runids" "$subjects" > "$jobfile"
 fi
 
 if [ $test = true ]; then
