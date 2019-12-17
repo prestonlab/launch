@@ -1,9 +1,9 @@
 #!/bin/bash
 #
-#  get_auto_jobfile.sh   Generate a job file with a serial number.
+#  jfile   Generate a job file with a serial number.
 #
 #  Usage:
-#  get_auto_jobfile.sh [base]
+#  jfile [base]
 #
 #  If base is not specified, "Job" will be used. The file will be in BATCHDIR.
 

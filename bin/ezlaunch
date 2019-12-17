@@ -93,7 +93,7 @@ elif [[ ! -d $BATCHDIR ]]; then
 fi
 
 # get the next job file for this basename, in the BATCHDIR
-jobfile=$(get_auto_jobfile.sh "$jobname")
+jobfile=$(jfile "$jobname")
 
 if [[ $script ]]; then
     # script with one or more commands

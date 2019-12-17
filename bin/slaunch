@@ -118,7 +118,7 @@ elif [[ ! -d $BATCHDIR ]]; then
 fi
 
 # determine file to write commands to
-jobfile=$(get_auto_jobfile.sh "$jobname")
+jobfile=$(jfile "$jobname")
 
 for no in $nos; do
     # get the subject identifier

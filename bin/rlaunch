@@ -120,7 +120,7 @@ elif [[ ! -d $BATCHDIR ]]; then
 fi
 
 # determine file to write commands to
-jobfile=$(get_auto_jobfile.sh "$jobname")
+jobfile=$(jfile "$jobname")
 
 if [[ $test = true ]]; then
     run_runs.sh $args "$command" "$runids" "$subjects"
