@@ -1,6 +1,11 @@
 # launch
 Programs for managing job submission through slurm.
 
+These scripts can be used to submit jobs for a cluster running the
+slurm scheduler. Some scripts are designed with neuroimaging data in
+mind, for example running a single command to process data from multiple
+participants in an experiment can be done using `slaunch`.
+
 ## Installation
 
 Add `launch/bin` to your PATH. Set BATCHDIR to indicate the directory
