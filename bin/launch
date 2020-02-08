@@ -198,7 +198,8 @@ def launch_slurm(cmd='', script_name=None, runtime='01:00:00',
     jobid = None
     if not test:
         process = subprocess.Popen('sbatch %s' % qsubfilepath,
-                                   shell=True, stdout=subprocess.PIPE)
+                                   shell=True, stdout=subprocess.PIPE,
+                                   encoding='utf-8')
         for line in process.stdout:
             print(line.strip())
 
