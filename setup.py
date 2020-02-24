@@ -7,7 +7,7 @@ def readme():
 
 
 setup(name='ezlaunch',
-      version='1.0.1',
+      version='1.0.2',
       description='Tools to launch slurm jobs',
       long_description=readme(),
       classifiers=[
@@ -24,6 +24,7 @@ setup(name='ezlaunch',
                'bin/jstatus',
                'bin/launch',
                'bin/rlaunch',
-               'bin/slaunch'],
+               'bin/slaunch',
+               'bin/subjids'],
       include_package_data=True,
       zip_safe=False)
