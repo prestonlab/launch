@@ -8,7 +8,21 @@ participants in an experiment can be done using `slaunch`.
 
 ## Installation
 
-Add `launch/bin` to your PATH. Set BATCHDIR to indicate the directory
+To install the most recent release from PyPI, run:
+
+```bash
+pip install ezlaunch
+```
+
+To install the latest version on GitHub, run:
+
+```bash
+pip install git+https://github.com/prestonlab/launch
+```
+
+Verify installation by running `launch -h`.
+
+Set the BATCHDIR environment variable to indicate the directory
 in which job commands, slurm options, and job output should be saved.
 If a job is called "myjob", then running a job will produce:
 
