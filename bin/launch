@@ -114,10 +114,12 @@ def launch_slurm(cmd='', script_name=None, runtime='01:00:00',
             nnodes = int(nnodes)
             ntasks = int(ntasks)
 
-        if nnodes > MAXNODES[queue]:
-            nnodes = MAXNODES[queue]
-        if ntasks > MAXCORES[queue]:
-            ntasks = MAXCORES[queue]
+        if queue in MAXNODES:
+            if nnodes > MAXNODES[queue]:
+                nnodes = MAXNODES[queue]
+        if queue in MAXCORES:
+            if ntasks > MAXCORES[queue]:
+                ntasks = MAXCORES[queue]
 
         qsubfile.write(
             '# Using parametric launcher with control file: %s\n#\n' % script_name)
