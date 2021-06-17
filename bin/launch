@@ -12,23 +12,57 @@ import subprocess
 import math
 from datetime import datetime
 
-CORES = {'normal': 48, 'largemem': 32, 'hugemem': 20,
-         'development': 48, 'gpu': 10, 'largemem512GB': 64,
-         'skx-normal': 48}
-MAXNODES = {'normal': 171, 'largemem': 342, 'hugemem': 2,
-            'development': 11, 'gpu': 4, 'largemem512GB': 4,
-            'skx-normal': 128}
-MAXCORES = {'normal': 4104, 'largemem': 8208, 'hugemem': 40,
-            'development': 264, 'gpu': 40, 'largemem512GB': 4 * 64,
-            'skx-normal': 3072}
+CORES = {
+    'normal': 48,
+    'largemem': 32,
+    'hugemem': 20,
+    'development': 48,
+    'gpu': 10,
+    'largemem512GB': 64,
+    'skx-normal': 48,
+}
+MAXNODES = {
+    'normal': 171,
+    'largemem': 342,
+    'hugemem': 2,
+    'development': 11,
+    'gpu': 4,
+    'largemem512GB': 4,
+    'skx-normal': 128,
+}
+MAXCORES = {
+    'normal': 4104,
+    'largemem': 8208,
+    'hugemem': 40,
+    'development': 264,
+    'gpu': 40,
+    'largemem512GB': 4 * 64,
+    'skx-normal': 3072,
+}
 
 
-def launch_slurm(cmd='', script_name=None, runtime='01:00:00',
-                 jobname='launch', outfile=None, projname=None, queue='normal',
-                 email=None, qsubfile=None, keepqsubfile=False,
-                 test=False, compiler='intel', hold=None, cwd=None,
-                 nnodes=None, ntasks=None, tpn=None, antsproc=None,
-                 schedule='dynamic', remora=None):
+def launch_slurm(
+    cmd='',
+    script_name=None,
+    runtime='01:00:00',
+    jobname='launch',
+    outfile=None,
+    projname=None,
+    queue='normal',
+    email=None,
+    qsubfile=None,
+    keepqsubfile=False,
+    test=False,
+    compiler='intel',
+    hold=None,
+    cwd=None,
+    nnodes=None,
+    ntasks=None,
+    tpn=None,
+    antsproc=None,
+    schedule='dynamic',
+    remora=None,
+):
 
     if len(cmd) > 0:
         parametric = False
@@ -49,8 +83,7 @@ def launch_slurm(cmd='', script_name=None, runtime='01:00:00',
         # check for empty lines
         for s in script_cmds:
             if s.strip() == '':
-                print(
-                    'command file contains empty lines - please remove them first')
+                print('command file contains empty lines - please remove them first')
                 sys.exit()
 
         # determine whether to use launcher
@@ -67,12 +100,14 @@ def launch_slurm(cmd='', script_name=None, runtime='01:00:00',
 
     else:
         print(
-            'ERROR: you must either specify a script name (using -s) or a command to run\n\n')
+            'ERROR: you must either specify a script name (using -s) or a command to run\n\n'
+        )
         sys.exit()
 
     if qsubfile is None:
-        qsubfile, qsubfilepath = mkstemp(prefix=jobname + "_",
-                                         dir='.', suffix='.slurm', text=True)
+        qsubfile, qsubfilepath = mkstemp(
+            prefix=jobname + "_", dir='.', suffix='.slurm', text=True
+        )
         os.close(qsubfile)
     else:
         qsubfilepath = qsubfile
@@ -122,7 +157,8 @@ def launch_slurm(cmd='', script_name=None, runtime='01:00:00',
                 ntasks = MAXCORES[queue]
 
         qsubfile.write(
-            '# Using parametric launcher with control file: %s\n#\n' % script_name)
+            '# Using parametric launcher with control file: %s\n#\n' % script_name
+        )
         qsubfile.write('#SBATCH -N %d\n' % nnodes)
         qsubfile.write('#SBATCH -n %d\n' % ntasks)
     else:
@@ -173,8 +209,7 @@ def launch_slurm(cmd='', script_name=None, runtime='01:00:00',
         qsubfile.write('module load remora\n')
 
     if antsproc is not None:
-        qsubfile.write(
-            'export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=%d\n' % antsproc)
+        qsubfile.write('export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=%d\n' % antsproc)
 
     if not parametric:
         qsubfile.write('set -x\n')
@@ -196,15 +231,19 @@ def launch_slurm(cmd='', script_name=None, runtime='01:00:00',
     qsubfile.write('echo " "\necho " Job complete at $(date)"\necho " "\n')
     qsubfile.write('finish=$(date +%s)\n')
     qsubfile.write(
-        'printf "Job duration: %02d:%02d:%02d (%d s)\n" $(((finish-start)/3600)) $(((finish-start)%3600/60)) $(((finish-start)%60)) $((finish-start))\n')
+        'printf "Job duration: %02d:%02d:%02d (%d s)\n" $(((finish-start)/3600)) $(((finish-start)%3600/60)) $(((finish-start)%60)) $((finish-start))\n'
+    )
 
     qsubfile.close()
 
     jobid = None
     if not test:
-        process = subprocess.Popen('sbatch %s' % qsubfilepath,
-                                   shell=True, stdout=subprocess.PIPE,
-                                   encoding='utf-8')
+        process = subprocess.Popen(
+            'sbatch %s' % qsubfilepath,
+            shell=True,
+            stdout=subprocess.PIPE,
+            encoding='utf-8',
+        )
         for line in process.stdout:
             print(line.strip())
 
@@ -222,48 +261,96 @@ if __name__ == "__main__":
 
     # set up argument parser
     parser = argparse.ArgumentParser(description='process SLURM job.')
-    parser.add_argument('-N', '--nodes', help='minimum number of nodes',
-                        dest='nodes', default=None)
-    parser.add_argument('-n', '--ntasks', help='number of tasks to run',
-                        dest='ntasks', default=None)
-    parser.add_argument('-e', '--tasks-per-node',
-                        help='number of tasks per node',
-                        dest='tpn', default=None)
-    parser.add_argument('-s', '--script', help='name of parallel script to run',
-                        dest='script_name')
-    parser.add_argument('-r', '--runtime', help='maximum runtime for job',
-                        default='01:00:00', dest='runtime')
-    parser.add_argument('-J', '--jobname', help='job name',
-                        default='launch', dest='jobname')
-    parser.add_argument('-o', '--outfile', help='output file',
-                        default=None, dest='outfile')
-    parser.add_argument('-p', '-q', '--queue', help='name of queue',
-                        default='normal', dest='queue')
-    parser.add_argument('-A', '--projname', help='name of project',
-                        dest='projname', default='ANTS')
-    parser.add_argument('-m', '--email', help='email address for notification',
-                        dest='email')
-    parser.add_argument('-D', '--cwd', help='name of working directory',
-                        dest='directory')
-    parser.add_argument('-f', '--qsubfile', help='name of batch file',
-                        dest='qsubfile')
-    parser.add_argument('-w', '--waitproc', help='process to wait for',
-                        dest='waitproc')
-    parser.add_argument('-k', '--keepqsubfile', help='keep qsub file',
-                        dest='keepqsubfile', action="store_true", default=False)
-    parser.add_argument('-t', '--test', help='do not actually launch job',
-                        dest='test', action="store_true", default=False)
-    parser.add_argument('-c', '--compiler', help='compiler (default=intel)',
-                        dest='compiler', default='intel')
-    parser.add_argument('-a', '--antsproc', help='number of processes for ANTS',
-                        dest='antsproc', type=int)
-    parser.add_argument('-x', '--remora',
-                        help='directory to save resource usage info using remora')
-    parser.add_argument('-d', '-i', '--hold_jid',
-                        help='wait for this job id to complete before running',
-                        dest='hold', default=None)
-    parser.add_argument('-b', '--schedule', default='interleaved',
-                        help="schedule type (default: interleaved)")
+    parser.add_argument(
+        '-N', '--nodes', help='minimum number of nodes', dest='nodes', default=None
+    )
+    parser.add_argument(
+        '-n', '--ntasks', help='number of tasks to run', dest='ntasks', default=None
+    )
+    parser.add_argument(
+        '-e',
+        '--tasks-per-node',
+        help='number of tasks per node',
+        dest='tpn',
+        default=None,
+    )
+    parser.add_argument(
+        '-s', '--script', help='name of parallel script to run', dest='script_name'
+    )
+    parser.add_argument(
+        '-r',
+        '--runtime',
+        help='maximum runtime for job',
+        default='01:00:00',
+        dest='runtime',
+    )
+    parser.add_argument(
+        '-J', '--jobname', help='job name', default='launch', dest='jobname'
+    )
+    parser.add_argument(
+        '-o', '--outfile', help='output file', default=None, dest='outfile'
+    )
+    parser.add_argument(
+        '-p', '-q', '--queue', help='name of queue', default='normal', dest='queue'
+    )
+    parser.add_argument(
+        '-A', '--projname', help='name of project', dest='projname', default='ANTS'
+    )
+    parser.add_argument(
+        '-m', '--email', help='email address for notification', dest='email'
+    )
+    parser.add_argument(
+        '-D', '--cwd', help='name of working directory', dest='directory'
+    )
+    parser.add_argument('-f', '--qsubfile', help='name of batch file', dest='qsubfile')
+    parser.add_argument('-w', '--waitproc', help='process to wait for', dest='waitproc')
+    parser.add_argument(
+        '-k',
+        '--keepqsubfile',
+        help='keep qsub file',
+        dest='keepqsubfile',
+        action="store_true",
+        default=False,
+    )
+    parser.add_argument(
+        '-t',
+        '--test',
+        help='do not actually launch job',
+        dest='test',
+        action="store_true",
+        default=False,
+    )
+    parser.add_argument(
+        '-c',
+        '--compiler',
+        help='compiler (default=intel)',
+        dest='compiler',
+        default='intel',
+    )
+    parser.add_argument(
+        '-a',
+        '--antsproc',
+        help='number of processes for ANTS',
+        dest='antsproc',
+        type=int,
+    )
+    parser.add_argument(
+        '-x', '--remora', help='directory to save resource usage info using remora'
+    )
+    parser.add_argument(
+        '-d',
+        '-i',
+        '--hold_jid',
+        help='wait for this job id to complete before running',
+        dest='hold',
+        default=None,
+    )
+    parser.add_argument(
+        '-b',
+        '--schedule',
+        default='interleaved',
+        help="schedule type (default: interleaved)",
+    )
 
     (args, command) = parser.parse_known_args(sys.argv[1:])
 
@@ -272,12 +359,25 @@ if __name__ == "__main__":
     else:
         cmd = ''
 
-    launch_slurm(cmd=cmd, script_name=args.script_name,
-                 runtime=args.runtime, jobname=args.jobname,
-                 outfile=args.outfile, projname=args.projname,
-                 queue=args.queue, email=args.email,
-                 qsubfile=args.qsubfile, keepqsubfile=args.keepqsubfile,
-                 test=args.test, compiler=args.compiler, hold=args.hold,
-                 cwd=args.directory, nnodes=args.nodes,
-                 ntasks=args.ntasks, tpn=args.tpn, antsproc=args.antsproc,
-                 schedule=args.schedule, remora=args.remora)
+    launch_slurm(
+        cmd=cmd,
+        script_name=args.script_name,
+        runtime=args.runtime,
+        jobname=args.jobname,
+        outfile=args.outfile,
+        projname=args.projname,
+        queue=args.queue,
+        email=args.email,
+        qsubfile=args.qsubfile,
+        keepqsubfile=args.keepqsubfile,
+        test=args.test,
+        compiler=args.compiler,
+        hold=args.hold,
+        cwd=args.directory,
+        nnodes=args.nodes,
+        ntasks=args.ntasks,
+        tpn=args.tpn,
+        antsproc=args.antsproc,
+        schedule=args.schedule,
+        remora=args.remora,
+    )
