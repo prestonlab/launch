@@ -22,6 +22,34 @@ pip install git+https://github.com/prestonlab/launch
 
 Verify installation by running `launch -h`.
 
+## Configuration
+
+The launch programs can use information about cluster configuration to
+fill in blanks (e.g., the number of cores available on each node) and
+to make sure you're not going over limits of the queue you're submitting
+to (e.g., a maximum number of nodes).
+
+The configuration is specified using TOML files, which have a simple format.
+Options are specified separately for each queue partition. For example:
+
+```toml
+[normal]
+cores = 56
+max-nodes = 1280
+
+[development]
+cores = 56
+max-nodes = 40
+```
+
+This sets the number of cores and maximum number of nodes per job for the
+normal and development partitions. You may also set a `max-cores` option to
+restrict the number of total cores used by a job.
+
+The launch programs will look for a configuration file at `$HOME/.launch.toml`.
+If you set the `LAUNCH_CONFIG` environment variable, launch will look there
+instead.
+
 ### EZ Launch
 
 In contrast to launch, which is relatively low level, ezlaunch manages 
