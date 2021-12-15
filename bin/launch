@@ -28,37 +28,37 @@ except IOError as err:
 
 
 def launch_slurm(
-    cmd='',
+    command='',
     script_name=None,
     runtime='01:00:00',
-    jobname='launch',
-    outfile=None,
-    projname=None,
-    queue='normal',
+    job_name='launch',
+    out_file=None,
+    account=None,
+    queue_name='normal',
     email=None,
-    qsubfile=None,
-    keepqsubfile=False,
+    qsub_file=None,
+    keep_qsub_file=False,
     test=False,
     compiler='intel',
     hold=None,
     cwd=None,
-    nnodes=None,
-    ntasks=None,
+    n_nodes=None,
+    n_tasks=None,
     tpn=None,
-    antsproc=None,
+    n_ants_proc=None,
     schedule='dynamic',
     remora=None,
 ):
-    if queue in queues:
-        nodes = queues[queue]
+    if queue_name in queues:
+        nodes = queues[queue_name]
     else:
         nodes = queues['default']
-    if len(cmd) > 0:
+    if len(command) > 0:
         parametric = False
-        print('Running serial command: ' + cmd)
-        ncmds = 1
-        nnodes = 1
-        ntasks = 1
+        print('Running serial command: ' + command)
+        n_commands = 1
+        n_nodes = 1
+        n_tasks = 1
     elif script_name is not None:
         # read commands file
         try:
@@ -66,23 +66,23 @@ def launch_slurm(
         except:
             print('%s does not exist!' % script_name)
             sys.exit(0)
-        script_cmds = f.readlines()
+        script_commands = f.readlines()
         f.close()
 
         # check for empty lines
-        for s in script_cmds:
+        for s in script_commands:
             if s.strip() == '':
                 print('command file contains empty lines - please remove them first')
                 sys.exit()
 
         # determine whether to use launcher
-        ncmds = len(script_cmds)
-        print('found %d commands' % ncmds)
-        if ncmds == 1:
+        n_commands = len(script_commands)
+        print('found %d commands' % n_commands)
+        if n_commands == 1:
             # if only one, do not use launcher, which fails sometimes
             parametric = False
-            cmd = script_cmds[0]
-            print('Running serial command: ' + cmd)
+            command = script_commands[0]
+            print('Running serial command: ' + command)
         else:
             parametric = True
             print('Submitting parametric job file: ' + script_name)
@@ -93,28 +93,28 @@ def launch_slurm(
         )
         sys.exit()
 
-    if qsubfile is None:
-        qsubfile, qsubfilepath = mkstemp(
-            prefix=jobname + "_", dir='.', suffix='.slurm', text=True
+    if qsub_file is None:
+        qsub_file, qsub_file_path = mkstemp(
+            prefix=job_name + "_", dir='.', suffix='.slurm', text=True
         )
-        os.close(qsubfile)
+        os.close(qsub_file)
     else:
-        qsubfilepath = qsubfile
+        qsub_file_path = qsub_file
 
-    print('Outputting SLURM commands to %s' % qsubfilepath)
-    qsubfile = open(qsubfilepath, 'w')
-    qsubfile.write('#!/bin/bash\n#\n')
-    qsubfile.write('# SLURM control file automatically created by launch\n#\n')
-    qsubfile.write('# Created on: {}\n'.format(datetime.now()))
+    print('Outputting SLURM commands to %s' % qsub_file_path)
+    qsub_file = open(qsub_file_path, 'w')
+    qsub_file.write('#!/bin/bash\n#\n')
+    qsub_file.write('# SLURM control file automatically created by launch\n#\n')
+    qsub_file.write('# Created on: {}\n'.format(datetime.now()))
     if parametric:
         # fill in the blanks
         if tpn is not None:
             # user specified the number of tasks per node; get the
             # number of nodes given that, evenly splitting tasks by
             # node
-            nnodes = int(math.ceil(float(ncmds) / float(tpn)))
-            ntasks = nnodes * int(tpn)
-        elif nnodes is None and ntasks is None:
+            n_nodes = int(math.ceil(float(n_commands) / float(tpn)))
+            n_tasks = n_nodes * int(tpn)
+        elif n_nodes is None and n_tasks is None:
             # nothing is explicitly specified; use one task per core
             # based on the queue, with the minimum number of nodes
             # given that
@@ -122,10 +122,10 @@ def launch_slurm(
                 raise ValueError('Must define cores.')
             else:
                 cores = nodes['cores']
-            nnodes = int(math.ceil(ncmds / cores))
-            ntasks = nnodes * cores
-            print("Estimated %d nodes and %d tasks" % (nnodes, ntasks))
-        elif nnodes is None and ntasks is not None:
+            n_nodes = int(math.ceil(n_commands / cores))
+            n_tasks = n_nodes * cores
+            print("Estimated %d nodes and %d tasks" % (n_nodes, n_tasks))
+        elif n_nodes is None and n_tasks is not None:
             # number of total tasks is specified, but not nodes or
             # tpn; cannot calculate tpn, so just minimize the number
             # of nodes
@@ -133,114 +133,115 @@ def launch_slurm(
                 raise ValueError('Must define cores.')
             else:
                 cores = nodes['cores']
-            ntasks = int(ntasks)
-            nnodes = int(math.ceil(ntasks / cores))
-            print("Number of nodes not specified; estimated as %d" % nnodes)
-        elif ntasks is None and nnodes is not None:
+            n_tasks = int(n_tasks)
+            n_nodes = int(math.ceil(n_tasks / cores))
+            print("Number of nodes not specified; estimated as %d" % n_nodes)
+        elif n_tasks is None and n_nodes is not None:
             # tasks and tpn not specified; set tasks to the number of
             # commands
             if nodes['cores'] is None:
                 raise ValueError('Must define cores.')
             else:
                 cores = nodes['cores']
-            nnodes = int(nnodes)
-            ntasks = int(nnodes * cores)
-            print("Number of tasks not specified; estimated as %d" % ntasks)
+            n_nodes = int(n_nodes)
+            n_tasks = int(n_nodes * cores)
+            print("Number of tasks not specified; estimated as %d" % n_tasks)
         else:
-            nnodes = int(nnodes)
-            ntasks = int(ntasks)
+            n_nodes = int(n_nodes)
+            n_tasks = int(n_tasks)
 
         if nodes['max-nodes'] is not None:
-            if nnodes > nodes['max-nodes']:
-                nnodes = nodes['max-nodes']
+            if n_nodes > nodes['max-nodes']:
+                n_nodes = nodes['max-nodes']
         if nodes['max-cores'] is not None:
-            if nnodes > nodes['max-cores']:
-                nnodes = nodes['max-cores']
+            if n_nodes > nodes['max-cores']:
+                n_nodes = nodes['max-cores']
 
-        qsubfile.write(
+        qsub_file.write(
             '# Using parametric launcher with control file: %s\n#\n' % script_name
         )
-        qsubfile.write('#SBATCH -N %d\n' % nnodes)
-        qsubfile.write('#SBATCH -n %d\n' % ntasks)
+        qsub_file.write('#SBATCH -N %d\n' % n_nodes)
+        qsub_file.write('#SBATCH -n %d\n' % n_tasks)
     else:
-        qsubfile.write('# Launching single command: %s\n#\n' % cmd)
-        qsubfile.write('#SBATCH -N 1\n')
-        qsubfile.write('#SBATCH -n 1\n')
+        qsub_file.write('# Launching single command: %s\n#\n' % command)
+        qsub_file.write('#SBATCH -N 1\n')
+        qsub_file.write('#SBATCH -n 1\n')
 
     if cwd is not None:
-        qsubfile.write('#SBATCH -D %s\n' % cwd)
-    qsubfile.write('#SBATCH -J %s\n' % jobname)
-    if outfile is not None:
-        qsubfile.write('#SBATCH -o {0}\n'.format(outfile))
+        qsub_file.write('#SBATCH -D %s\n' % cwd)
+    qsub_file.write('#SBATCH -J %s\n' % job_name)
+    if out_file is not None:
+        qsub_file.write('#SBATCH -o {0}\n'.format(out_file))
     else:
-        qsubfile.write('#SBATCH -o {0}.o%j\n'.format(jobname))
-    qsubfile.write('#SBATCH -p %s\n' % queue)
-    qsubfile.write('#SBATCH -t %s\n' % runtime)
+        qsub_file.write('#SBATCH -o {0}.o%j\n'.format(job_name))
+    qsub_file.write('#SBATCH -p %s\n' % queue_name)
+    qsub_file.write('#SBATCH -t %s\n' % runtime)
 
     if type(hold) is str:
-        qsubfile.write("#SBATCH -d afterok")
-        qsubfile.write(":{0}".format(int(hold)))
-        qsubfile.write('\n')
+        qsub_file.write("#SBATCH -d afterok")
+        qsub_file.write(":{0}".format(int(hold)))
+        qsub_file.write('\n')
 
-    if projname is not None:
-        qsubfile.write("#SBATCH -A {0}\n".format(projname))
+    account = account if account is not None else nodes['account']
+    if account is not None:
+        qsub_file.write("#SBATCH -A {0}\n".format(account))
 
     if email is not None:
-        qsubfile.write('#SBATCH --mail-type=ALL\n')
-        qsubfile.write('#SBATCH --mail-user=%s\n' % email)
+        qsub_file.write('#SBATCH --mail-type=ALL\n')
+        qsub_file.write('#SBATCH --mail-user=%s\n' % email)
 
-    qsubfile.write('\numask 2\n\n')
+    qsub_file.write('\numask 2\n\n')
 
     if cwd is None:
         cwd = os.getcwd()
 
-    qsubfile.write('echo " Starting at $(date)"\n')
-    qsubfile.write('start=$(date +%s)\n')
-    qsubfile.write('echo " WORKING DIR: %s/"\n' % cwd)
-    qsubfile.write('echo " JOB ID:      $SLURM_JOB_ID"\n')
-    qsubfile.write('echo " JOB NAME:    $SLURM_JOB_NAME"\n')
-    qsubfile.write('echo " NODES:       $SLURM_NODELIST"\n')
-    qsubfile.write('echo " N NODES:     $SLURM_NNODES"\n')
-    qsubfile.write('echo " N TASKS:     $SLURM_NTASKS"\n')
+    qsub_file.write('echo " Starting at $(date)"\n')
+    qsub_file.write('start=$(date +%s)\n')
+    qsub_file.write('echo " WORKING DIR: %s/"\n' % cwd)
+    qsub_file.write('echo " JOB ID:      $SLURM_JOB_ID"\n')
+    qsub_file.write('echo " JOB NAME:    $SLURM_JOB_NAME"\n')
+    qsub_file.write('echo " NODES:       $SLURM_NODELIST"\n')
+    qsub_file.write('echo " N NODES:     $SLURM_NNODES"\n')
+    qsub_file.write('echo " N TASKS:     $SLURM_NTASKS"\n')
 
     if compiler == "gcc":
-        qsubfile.write('module swap intel gcc\n')
+        qsub_file.write('module swap intel gcc\n')
 
     if remora is not None:
-        qsubfile.write('module load remora\n')
+        qsub_file.write('module load remora\n')
 
-    if antsproc is not None:
-        qsubfile.write('export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=%d\n' % antsproc)
+    if n_ants_proc is not None:
+        qsub_file.write('export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=%d\n' % n_ants_proc)
 
     if not parametric:
-        qsubfile.write('set -x\n')
+        qsub_file.write('set -x\n')
         if remora is not None:
-            qsubfile.write('remora ' + cmd + '\n')
+            qsub_file.write('remora ' + command + '\n')
         else:
-            qsubfile.write(cmd + '\n')
-        qsubfile.write('set +x\n')
+            qsub_file.write(command + '\n')
+        qsub_file.write('set +x\n')
         if remora is not None:
-            qsubfile.write('mv %s/remora_$SLURM_JOB_ID %s\n' % (cwd, remora))
+            qsub_file.write('mv %s/remora_$SLURM_JOB_ID %s\n' % (cwd, remora))
     else:
-        qsubfile.write('export LAUNCHER_SCHED=%s\n' % schedule)
-        qsubfile.write('export LAUNCHER_JOB_FILE=%s\n' % script_name)
+        qsub_file.write('export LAUNCHER_SCHED=%s\n' % schedule)
+        qsub_file.write('export LAUNCHER_JOB_FILE=%s\n' % script_name)
         if cwd is not None:
-            qsubfile.write('export LAUNCHER_WORKDIR=%s\n' % cwd)
+            qsub_file.write('export LAUNCHER_WORKDIR=%s\n' % cwd)
         else:
-            qsubfile.write('export LAUNCHER_WORKDIR=$(pwd)\n')
-        qsubfile.write('$LAUNCHER_DIR/paramrun\n')
-    qsubfile.write('echo " "\necho " Job complete at $(date)"\necho " "\n')
-    qsubfile.write('finish=$(date +%s)\n')
-    qsubfile.write(
+            qsub_file.write('export LAUNCHER_WORKDIR=$(pwd)\n')
+        qsub_file.write('$LAUNCHER_DIR/paramrun\n')
+    qsub_file.write('echo " "\necho " Job complete at $(date)"\necho " "\n')
+    qsub_file.write('finish=$(date +%s)\n')
+    qsub_file.write(
         'printf "Job duration: %02d:%02d:%02d (%d s)\n" $(((finish-start)/3600)) $(((finish-start)%3600/60)) $(((finish-start)%60)) $((finish-start))\n'
     )
 
-    qsubfile.close()
+    qsub_file.close()
 
-    jobid = None
+    job_id = None
     if not test:
         process = subprocess.Popen(
-            'sbatch %s' % qsubfilepath,
+            'sbatch %s' % qsub_file_path,
             shell=True,
             stdout=subprocess.PIPE,
             encoding='utf-8',
@@ -249,13 +250,13 @@ def launch_slurm(
             print(line.strip())
 
             if line.find('Submitted batch job') == 0:
-                jobid = int(line.strip().split(' ')[3])
+                job_id = int(line.strip().split(' ')[3])
         process.wait()
 
-    if not keepqsubfile:
-        print('Deleting qsubfile: %s' % qsubfilepath)
-        os.remove(qsubfilepath)
-    return jobid
+    if not keep_qsub_file:
+        print('Deleting qsubfile: %s' % qsub_file_path)
+        os.remove(qsub_file_path)
+    return job_id
 
 
 if __name__ == "__main__":
@@ -352,32 +353,32 @@ if __name__ == "__main__":
         help="schedule type (default: interleaved)",
     )
 
-    (args, command) = parser.parse_known_args(sys.argv[1:])
+    (args, command_args) = parser.parse_known_args(sys.argv[1:])
 
-    if len(command) > 0:
-        cmd = ' '.join(command)
+    if len(command_args) > 0:
+        cmd = ' '.join(command_args)
     else:
         cmd = ''
 
     launch_slurm(
-        cmd=cmd,
+        command=cmd,
         script_name=args.script_name,
         runtime=args.runtime,
-        jobname=args.jobname,
-        outfile=args.outfile,
-        projname=args.projname,
-        queue=args.queue,
+        job_name=args.jobname,
+        out_file=args.outfile,
+        account=args.projname,
+        queue_name=args.queue,
         email=args.email,
-        qsubfile=args.qsubfile,
-        keepqsubfile=args.keepqsubfile,
+        qsub_file=args.qsubfile,
+        keep_qsub_file=args.keepqsubfile,
         test=args.test,
         compiler=args.compiler,
         hold=args.hold,
         cwd=args.directory,
-        nnodes=args.nodes,
-        ntasks=args.ntasks,
+        n_nodes=args.nodes,
+        n_tasks=args.ntasks,
         tpn=args.tpn,
-        antsproc=args.antsproc,
+        n_ants_proc=args.antsproc,
         schedule=args.schedule,
         remora=args.remora,
     )
