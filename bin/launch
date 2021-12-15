@@ -294,7 +294,7 @@ if __name__ == "__main__":
         '-p', '-q', '--queue', help='name of queue', default='normal', dest='queue'
     )
     parser.add_argument(
-        '-A', '--projname', help='name of project', dest='projname', default='ANTS'
+        '-A', '--projname', help='name of project', dest='projname', default=None
     )
     parser.add_argument(
         '-m', '--email', help='email address for notification', dest='email'
