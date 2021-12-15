@@ -15,10 +15,16 @@ from launch import config
 
 
 config_file = config.find_config()
+defaults = {'account': None, 'cores': None, 'max-nodes': None, 'max-cores': None}
 try:
     queues = config.load_config(config_file)
+    for queue, settings in queues.items():
+        queues[queue] = defaults.copy()
+        if 'global' in queues:
+            queues[queue].update(queues['global'])
+        queues[queue].update(settings)
 except IOError as err:
-    queues = {'default': {'cores': None, 'max-nodes': None, 'max-cores': None}}
+    queues = {'default': defaults}
 
 
 def launch_slurm(
