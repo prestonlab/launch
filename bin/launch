@@ -107,7 +107,7 @@ def launch_slurm(
     qsub_file = open(qsub_file_path, 'w')
     qsub_file.write('#!/bin/bash\n#\n')
     qsub_file.write('# SLURM control file automatically created by launch\n#\n')
-    qsub_file.write('# Created on: {}\n'.format(datetime.now()))
+    qsub_file.write(f'# Created on: {datetime.now()}\n')
     if parametric:
         # fill in the blanks
         if tpn is not None:
@@ -162,35 +162,33 @@ def launch_slurm(
         qsub_file.write(
             '# Using parametric launcher with control file: %s\n#\n' % script_name
         )
-        qsub_file.write('#SBATCH -N %d\n' % n_nodes)
-        qsub_file.write('#SBATCH -n %d\n' % n_tasks)
+        qsub_file.write(f'#SBATCH -N {n_nodes:d}\n')
+        qsub_file.write(f'#SBATCH -n {n_tasks:d}\n')
     else:
-        qsub_file.write('# Launching single command: %s\n#\n' % command)
+        qsub_file.write(f'# Launching single command: {command}\n#\n')
         qsub_file.write('#SBATCH -N 1\n')
         qsub_file.write('#SBATCH -n 1\n')
 
     if cwd is not None:
-        qsub_file.write('#SBATCH -D %s\n' % cwd)
-    qsub_file.write('#SBATCH -J %s\n' % job_name)
+        qsub_file.write(f'#SBATCH -D {cwd}\n')
+    qsub_file.write(f'#SBATCH -J {job_name}\n')
     if out_file is not None:
-        qsub_file.write('#SBATCH -o {0}\n'.format(out_file))
+        qsub_file.write(f'#SBATCH -o {out_file}\n')
     else:
-        qsub_file.write('#SBATCH -o {0}.o%j\n'.format(job_name))
-    qsub_file.write('#SBATCH -p %s\n' % queue_name)
-    qsub_file.write('#SBATCH -t %s\n' % runtime)
+        qsub_file.write(f'#SBATCH -o {job_name}.o%j\n')
+    qsub_file.write(f'#SBATCH -p {queue_name}\n')
+    qsub_file.write(f'#SBATCH -t {runtime}\n')
 
     if type(hold) is str:
-        qsub_file.write("#SBATCH -d afterok")
-        qsub_file.write(":{0}".format(int(hold)))
-        qsub_file.write('\n')
+        qsub_file.write(f'#SBATCH -d afterok:{hold:d}\n')
 
     account = account if account is not None else nodes['account']
     if account is not None:
-        qsub_file.write("#SBATCH -A {0}\n".format(account))
+        qsub_file.write(f'#SBATCH -A {account}\n')
 
     if email is not None:
         qsub_file.write('#SBATCH --mail-type=ALL\n')
-        qsub_file.write('#SBATCH --mail-user=%s\n' % email)
+        qsub_file.write(f'#SBATCH --mail-user={email}\n')
 
     qsub_file.write('\numask 2\n\n')
 
@@ -213,22 +211,24 @@ def launch_slurm(
         qsub_file.write('module load remora\n')
 
     if n_ants_proc is not None:
-        qsub_file.write('export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=%d\n' % n_ants_proc)
+        qsub_file.write(
+            f'export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS={n_ants_proc:d}\n'
+        )
 
     if not parametric:
         qsub_file.write('set -x\n')
         if remora is not None:
-            qsub_file.write('remora ' + command + '\n')
+            qsub_file.write(f'remora {command}\n')
         else:
-            qsub_file.write(command + '\n')
+            qsub_file.write(f'{command}\n')
         qsub_file.write('set +x\n')
         if remora is not None:
-            qsub_file.write('mv %s/remora_$SLURM_JOB_ID %s\n' % (cwd, remora))
+            qsub_file.write(f'mv {cwd}/remora_$SLURM_JOB_ID {remora}\n')
     else:
-        qsub_file.write('export LAUNCHER_SCHED=%s\n' % schedule)
-        qsub_file.write('export LAUNCHER_JOB_FILE=%s\n' % script_name)
+        qsub_file.write(f'export LAUNCHER_SCHED={schedule}\n')
+        qsub_file.write(f'export LAUNCHER_JOB_FILE={script_name}\n')
         if cwd is not None:
-            qsub_file.write('export LAUNCHER_WORKDIR=%s\n' % cwd)
+            qsub_file.write(f'export LAUNCHER_WORKDIR={cwd}\n')
         else:
             qsub_file.write('export LAUNCHER_WORKDIR=$(pwd)\n')
         qsub_file.write('$LAUNCHER_DIR/paramrun\n')
@@ -243,7 +243,7 @@ def launch_slurm(
     job_id = None
     if not test:
         process = subprocess.Popen(
-            'sbatch %s' % qsub_file_path,
+            f'sbatch {qsub_file_path}',
             shell=True,
             stdout=subprocess.PIPE,
             encoding='utf-8',
