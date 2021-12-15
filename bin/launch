@@ -354,6 +354,13 @@ if __name__ == "__main__":
         default='interleaved',
         help="schedule type (default: interleaved)",
     )
+    parser.add_argument(
+        '-v',
+        '--verbosity',
+        default=2,
+        type=int,
+        help='Verbosity level (0 - errors only, 1 - warnings, 2 - information)'
+    )
 
     (args, command_args) = parser.parse_known_args(sys.argv[1:])
 
@@ -362,7 +369,8 @@ if __name__ == "__main__":
     else:
         cmd = ''
 
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+    levels = {0: logging.ERROR, 1: logging.WARN, 2: logging.INFO}
+    logging.basicConfig(stream=sys.stdout, level=levels[args.verbosity])
 
     launch_slurm(
         command=cmd,
