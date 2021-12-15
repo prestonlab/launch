@@ -5,6 +5,7 @@
 # and with single commands
 
 import argparse
+import logging
 import os
 import sys
 from tempfile import *
@@ -49,13 +50,14 @@ def launch_slurm(
     schedule='dynamic',
     remora=None,
 ):
+    logger = logging.getLogger()
     if queue_name in queues:
         nodes = queues[queue_name]
     else:
         nodes = queues['default']
     if len(command) > 0:
         parametric = False
-        print('Running serial command: ' + command)
+        logger.info(f'Running serial command: {command}')
         n_commands = 1
         n_nodes = 1
         n_tasks = 1
@@ -64,7 +66,7 @@ def launch_slurm(
         try:
             f = open(script_name, 'r')
         except:
-            print('%s does not exist!' % script_name)
+            logger.error(f'Script does not exist: {script_name}')
             sys.exit(0)
         script_commands = f.readlines()
         f.close()
@@ -72,24 +74,24 @@ def launch_slurm(
         # check for empty lines
         for s in script_commands:
             if s.strip() == '':
-                print('command file contains empty lines - please remove them first')
+                logger.error('Command file contains empty lines - please remove them')
                 sys.exit()
 
         # determine whether to use launcher
         n_commands = len(script_commands)
-        print('found %d commands' % n_commands)
+        logger.info(f'Found {n_commands} commands')
         if n_commands == 1:
             # if only one, do not use launcher, which fails sometimes
             parametric = False
             command = script_commands[0]
-            print('Running serial command: ' + command)
+            logger.info(f'Running serial command: {command}')
         else:
             parametric = True
-            print('Submitting parametric job file: ' + script_name)
+            logger.info(f'Submitting parametric job file: {script_name}')
 
     else:
-        print(
-            'ERROR: you must either specify a script name (using -s) or a command to run\n\n'
+        logger.error(
+            'You must either specify a script name (using -s) or a command to run'
         )
         sys.exit()
 
@@ -101,7 +103,7 @@ def launch_slurm(
     else:
         qsub_file_path = qsub_file
 
-    print('Outputting SLURM commands to %s' % qsub_file_path)
+    logger.info(f'Outputting SLURM commands to {qsub_file_path}')
     qsub_file = open(qsub_file_path, 'w')
     qsub_file.write('#!/bin/bash\n#\n')
     qsub_file.write('# SLURM control file automatically created by launch\n#\n')
@@ -124,7 +126,7 @@ def launch_slurm(
                 cores = nodes['cores']
             n_nodes = int(math.ceil(n_commands / cores))
             n_tasks = n_nodes * cores
-            print("Estimated %d nodes and %d tasks" % (n_nodes, n_tasks))
+            logger.info(f'Estimated {n_nodes} nodes and {n_tasks} tasks')
         elif n_nodes is None and n_tasks is not None:
             # number of total tasks is specified, but not nodes or
             # tpn; cannot calculate tpn, so just minimize the number
@@ -135,7 +137,7 @@ def launch_slurm(
                 cores = nodes['cores']
             n_tasks = int(n_tasks)
             n_nodes = int(math.ceil(n_tasks / cores))
-            print("Number of nodes not specified; estimated as %d" % n_nodes)
+            logger.info(f'Number of nodes not specified; estimated as {n_nodes}')
         elif n_tasks is None and n_nodes is not None:
             # tasks and tpn not specified; set tasks to the number of
             # commands
@@ -145,7 +147,7 @@ def launch_slurm(
                 cores = nodes['cores']
             n_nodes = int(n_nodes)
             n_tasks = int(n_nodes * cores)
-            print("Number of tasks not specified; estimated as %d" % n_tasks)
+            logger.info(f'Number of tasks not specified; estimated as {n_tasks}')
         else:
             n_nodes = int(n_nodes)
             n_tasks = int(n_tasks)
@@ -247,14 +249,14 @@ def launch_slurm(
             encoding='utf-8',
         )
         for line in process.stdout:
-            print(line.strip())
+            logger.info(line.strip())
 
             if line.find('Submitted batch job') == 0:
                 job_id = int(line.strip().split(' ')[3])
         process.wait()
 
     if not keep_qsub_file:
-        print('Deleting qsubfile: %s' % qsub_file_path)
+        logger.info(f'Deleting qsubfile: {qsub_file_path}')
         os.remove(qsub_file_path)
     return job_id
 
@@ -359,6 +361,8 @@ if __name__ == "__main__":
         cmd = ' '.join(command_args)
     else:
         cmd = ''
+
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
     launch_slurm(
         command=cmd,
