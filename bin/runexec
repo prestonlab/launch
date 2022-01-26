@@ -71,12 +71,12 @@ shift $((OPTIND-1))
 command="$1"
 shift 1
 
-runs=${1/:/ }
+runs=${1//:/ }
 
 if [[ $# -lt 2 ]]; then
     nos=""
 else
-    nos=${2/:/ }
+    nos=${2//:/ }
 fi
 
 if [[ ! $nos ]]; then

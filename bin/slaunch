@@ -108,7 +108,7 @@ command="$1"
 nos="$2"
 shift 2
 
-nos=${nos/:/ }
+nos=${nos//:/ }
 
 if [[ ! $BATCHDIR ]]; then
     export BATCHDIR=$PWD
@@ -130,7 +130,7 @@ for no in $nos; do
 
     if [[ $runifexist = true ]]; then
         # check for a dependency file
-        subj_file=${file/\{\}/$subject}
+        subj_file=${file//\{\}/$subject}
         if [ ! -a "$subj_file" ]; then
             if [ $verbose -gt 0 ]; then
                echo "Missing file: $subj_file"
@@ -139,7 +139,7 @@ for no in $nos; do
         fi
     elif [[ $runifmissing = true ]]; then
         # check for a missing output file
-        subj_file=${file/\{\}/$subject}
+        subj_file=${file//\{\}/$subject}
         if [[ -a $subj_file ]]; then
             if [[ $verbose -gt 0 ]]; then
                 echo "File exists: $subj_file"
@@ -149,8 +149,8 @@ for no in $nos; do
     fi
     
     # fill in subject ID and split commands
-    subj_command=${command/\{\}/$subject}
-    subj_command=${subj_command/\{s\}/$subject}
+    subj_command=${command//\{\}/$subject}
+    subj_command=${subj_command//\{s\}/$subject}
     echo "$subj_command"
     
     if [[ $test = false ]]; then

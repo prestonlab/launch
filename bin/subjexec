@@ -99,7 +99,7 @@ if [[ ! $nos ]]; then
 fi
 
 subjects=""
-for no in ${nos/:/ }; do
+for no in ${nos//:/ }; do
     # get subject id
     if [[ $ids = 1 ]]; then
         subject=$no
@@ -108,8 +108,8 @@ for no in ${nos/:/ }; do
     fi
 
     # create command
-    subj_command=${command/\{\}/$subject}
-    subj_command=${subj_command/\{s\}/$subject}
+    subj_command=${command//\{\}/$subject}
+    subj_command=${subj_command//\{s\}/$subject}
     if [[ $verbose = 1 && $runpar != 1 ]]; then
         echo "$subj_command"
     fi
