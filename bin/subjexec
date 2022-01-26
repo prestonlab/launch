@@ -109,6 +109,7 @@ for no in ${nos/:/ }; do
 
     # create command
     subj_command=${command/\{\}/$subject}
+    subj_command=${subj_command/\{s\}/$subject}
     if [[ $verbose = 1 && $runpar != 1 ]]; then
         echo "$subj_command"
     fi
