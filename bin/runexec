@@ -71,12 +71,12 @@ shift $((OPTIND-1))
 command="$1"
 shift 1
 
-runs=${$1//:/ }
+runs=${1/:/ }
 
 if [[ $# -lt 2 ]]; then
     nos=""
 else
-    nos=${2//:/ }
+    nos=${2/:/ }
 fi
 
 if [[ ! $nos ]]; then
@@ -109,12 +109,12 @@ else
         else
             subject=$(subjids "$no")
         fi
-        subj_command=${command//\{s\}/$subject}
-        subj_file=${file//\{s\}/$subject}
+        subj_command=${command/\{s\}/$subject}
+        subj_file=${file/\{s\}/$subject}
         for run in $runs; do
-            run_command=${subj_command//\{r\}/$run}
+            run_command=${subj_command/\{r\}/$run}
             if [[ $runifexist = true || $runifmissing = true ]]; then
-                run_file=${subj_file//\{r\}/$run}
+                run_file=${subj_file/\{r\}/$run}
                 if [[ $runifexist = true && ! -a $run_file ]]; then
                     continue
                 elif [[ $runifmissing = true && -a $run_file ]]; then

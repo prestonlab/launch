@@ -99,7 +99,7 @@ if [[ ! $nos ]]; then
 fi
 
 subjects=""
-for no in ${nos//:/ }; do
+for no in ${nos/:/ }; do
     # get subject id
     if [[ $ids = 1 ]]; then
         subject=$no
