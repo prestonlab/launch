@@ -4,9 +4,9 @@
 
 if [ $# -lt 1 ]; then
     cat <<EOF
-run_runs.sh   Run a command on multiple subjects and runs.
+runexec   Run a command on multiple subjects and runs.
 
-Usage: run_runs.sh [OPTION] commands runs [subjects]
+Usage: runexec [OPTION] commands runs [subjects]
 
 Options:
 -q
@@ -24,7 +24,7 @@ Options:
 -p
        run commands in parallel (run as background processes)
 
-Like run_subjs.sh, but any {r} will be replaced
+Like subjexec, but any {r} will be replaced
 with run identifier. If subjects are specified (optional),
 {s} will be replaced with the subject ID.
 

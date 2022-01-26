@@ -4,9 +4,9 @@
 
 if [ $# -lt 1 ]; then
     cat <<EOF
-run_subjs.sh   Run a command on multiple subjects.
+subjexec   Run a command on multiple subjects.
 
-Usage: run_subjs.sh [OPTION] commands [SUBJNOS]
+Usage: subjexec [OPTION] commands [SUBJNOS]
 
 Options:
 -q
@@ -43,11 +43,11 @@ Example
 To print the ID for the first four subjects in a study
 called mystudy:
 export STUDY=mystudy # only have to run this once
-run_subjs.sh 'echo {}' 1:2:3:4
+subjexec 'echo {}' 1:2:3:4
 
 Using the SUBJIDS environment variable:
 export SUBJIDS=No_003:No_004:No_005
-run_subjs.sh -i 'echo {}'
+subjexec -i 'echo {}'
 
 EOF
     exit 1
