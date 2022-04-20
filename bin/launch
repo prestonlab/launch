@@ -19,6 +19,7 @@ config_file = config.find_config()
 defaults = {'account': None, 'cores': None, 'max-nodes': None, 'max-cores': None}
 try:
     queues = config.load_config(config_file)
+    queues['default'] = defaults
     for queue, settings in queues.items():
         queues[queue] = defaults.copy()
         if 'global' in queues:
