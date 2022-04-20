@@ -30,9 +30,14 @@ to make sure you're not going over limits of the queue you're submitting
 to (e.g., a maximum number of nodes).
 
 The configuration is specified using TOML files, which have a simple format.
-Options are specified separately for each queue partition. For example:
+Global settings should go under a `[global]` heading, while partition-specific
+settings should go under a heading with the name of that partition.
+For example (here, "normal" and "development" are two partitions):
 
 ```toml
+[global]
+account = "myAccountName"
+
 [normal]
 cores = 56
 max-nodes = 1280
@@ -42,7 +47,8 @@ cores = 56
 max-nodes = 40
 ```
 
-This sets the number of cores and maximum number of nodes per job for the
+This sets the default account to use when submitting jobs. It also sets the number of 
+cores and the maximum number of nodes per job for the
 normal and development partitions. You may also set a `max-cores` option to
 restrict the number of total cores used by a job.
 
