@@ -180,8 +180,8 @@ def launch_slurm(
     qsub_file.write(f'#SBATCH -p {queue_name}\n')
     qsub_file.write(f'#SBATCH -t {runtime}\n')
 
-    if type(hold) is str:
-        qsub_file.write(f'#SBATCH -d afterok:{hold:d}\n')
+    if hold is not None:
+        qsub_file.write(f'#SBATCH -d afterok:{hold}\n')
 
     account = account if account is not None else nodes['account']
     if account is not None:
